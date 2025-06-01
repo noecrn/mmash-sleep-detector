@@ -29,3 +29,16 @@ def load_actigraph_data(user_dir: Path) -> pd.DataFrame:
 
 def load_sleep_data(user_dir: Path) -> pd.DataFrame:
     return pd.read_csv(user_dir / "sleep.csv")
+
+def load_user_data(user_dir: Path) -> pd.DataFrame:
+    acti = load_actigraph_data(user_dir)
+    rr = load_rr_data(user_dir)
+    
+    df = pd.merge_asof(
+        acti.sort_values("timestamp"),
+        rr.sort_values("timestamp"),
+        on="timestamp",
+        direction="nearest"
+    )
+    
+    return df

@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from src.data.load_data import load_rr_data, load_actigraph_data
+from src.data.load_data import load_rr_data, load_actigraph_data, load_user_data
 
 def prepare_user_data(user_id: str, raw_base="../data/raw", out_base="../data/processed"):
     """
@@ -48,7 +48,7 @@ def window_features(df: pd.DataFrame, user_id: str, freq: str = "60s") -> pd.Dat
     df = df.sort_index()
 
     features = df.resample(freq).agg({
-        "bpm": ["mean", "std"],
+        "HR": ["mean", "std"],
         "Vector Magnitude": ["mean", "std"],
         "Steps": "sum"
     })
@@ -72,10 +72,20 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
     raw_dir = Path(raw_dir)
     all_users = []
 
-    for file in processed_dir.glob("user_*.csv"):
-        user_id = file.stem
-        df = pd.read_csv(file)
+    for user_path in raw_dir.glob("user_*"):
+        user_id = user_path.stem
+        df = load_user_data(raw_dir / user_id)
+        if df is None or df.empty:
+            print(f"❌ Données manquantes ou vides pour {user_id}")
+            continue
+
+        print(f"🔄 Traitement des données pour {user_id}...")
+
         feats = window_features(df, user_id=user_id)
+
+        # Save per-user features
+        processed_dir.mkdir(parents=True, exist_ok=True)
+        feats.to_csv(processed_dir / f"{user_id}.csv", index=False)
 
         # Load sleep.csv and build sleep intervals
         sleep_path = raw_dir / user_id / "sleep.csv"
