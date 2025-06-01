@@ -1,0 +1,21 @@
+# Manipulation des données
+pandas
+numpy
+scipy
+
+# Machine learning / deep learning
+torch
+torchvision
+scikit-learn
+
+# Visualisation
+matplotlib
+seaborn
+
+# Notebook
+jupyter
+ipykernel
+
+# Utilitaires
+tqdm
+pathlib
