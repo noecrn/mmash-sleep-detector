@@ -48,7 +48,7 @@ make eval        # Evaluate model
 
 ## 📊 Results Preview
 
-![Sleep Detection Accuracy](reports/figures/accuracy_by_user.png)
+![Sleep Detection Accuracy](reports/model_comparison.png)
 
 ## 📎 Notes
 
