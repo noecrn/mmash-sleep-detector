@@ -78,53 +78,55 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
     processed_dir = Path(processed_dir)
     raw_dir = Path(raw_dir)
     all_users = []
-
+    
+    # Add counter for debugging
+    user_count = 0
+    
+    print(f"Looking for users in: {raw_dir}")
+    
     for user_path in raw_dir.glob("user_*"):
+        user_count += 1
         user_id = user_path.stem
+        print(f"\nProcessing {user_id}...")
+        
         df = load_user_data(raw_dir / user_id)
-        print(f"{user_id} → {df.shape if df is not None else 'None'}")
-        print(f"{user_id} columns: {df.columns}" if df is not None else f"{user_id} columns: None")
-
         if df is None or df.empty:
-            print(f"❌ Données manquantes ou vides pour {user_id}")
+            print(f"❌ Skipping {user_id} - No data")
+            continue
+            
+        feats = window_features(df, user_id=user_id)
+        if feats.empty:
+            print(f"❌ Skipping {user_id} - No features generated")
             continue
 
-        print(f"🔄 Traitement des données pour {user_id}...")
-
-        feats = window_features(df, user_id=user_id)
-        print("✅ Features extracted: {feats.shape}")
-
-        # Save per-user features
-        processed_dir.mkdir(parents=True, exist_ok=True)
-        # feats.to_csv(processed_dir / f"{user_id}.csv", index=False)
-
-        # Load sleep.csv and build sleep intervals
+        # Load sleep.csv and add is_sleeping label
         sleep_path = raw_dir / user_id / "sleep.csv"
         if sleep_path.exists():
             sleep_df = pd.read_csv(sleep_path)
-            
-            sleep_df["In Bed Date"] = sleep_df["In Bed Date"].astype(str)
-            sleep_df["In Bed Time"] = sleep_df["In Bed Time"].astype(str)
-            sleep_df["Out Bed Date"] = sleep_df["Out Bed Date"].astype(str)
-            sleep_df["Out Bed Time"] = sleep_df["Out Bed Time"].astype(str)
-            
+
+            # Convertir en datetime
             sleep_df["start"] = pd.to_datetime("2023-01-0" + sleep_df["In Bed Date"].astype(str) + " " + sleep_df["In Bed Time"])
             sleep_df["end"] = pd.to_datetime("2023-01-0" + sleep_df["Out Bed Date"].astype(str) + " " + sleep_df["Out Bed Time"])
 
-            # Label each window
+            # Marquer les timestamps comme "sleeping" si dans un intervalle
             feats["is_sleeping"] = feats["timestamp"].apply(
                 lambda ts: any((ts >= start) & (ts <= end) for start, end in zip(sleep_df["start"], sleep_df["end"]))
             )
         else:
             print(f"⚠️ sleep.csv manquant pour {user_id}")
             feats["is_sleeping"] = False
-
+            
+        # Verify feature data before adding
+        print(f"Features shape for {user_id}: {feats.shape}")
         all_users.append(feats)
-
+        print(f"✅ Added features for {user_id}")
+    
+    if user_count == 0:
+        raise ValueError(f"No user directories found in {raw_dir}")
+        
+    if len(all_users) == 0:
+        raise ValueError(f"No valid user data processed. Checked {user_count} users")
+        
     # Concat and save
     full_df = pd.concat(all_users, ignore_index=True)
-    # out_path = Path(out_path)
-    # out_path.parent.mkdir(parents=True, exist_ok=True)
-    # full_df.to_csv(out_path, index=False)
-    # print(f"✅ Dataset complet sauvegardé : {out_path}")
     return full_df
