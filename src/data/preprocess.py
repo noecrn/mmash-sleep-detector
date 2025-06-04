@@ -34,14 +34,14 @@ def prepare_user_data(user_id: str, raw_base="../data/raw", out_base="../data/pr
     
 def window_features(df: pd.DataFrame, user_id: str, freq: str = "60s") -> pd.DataFrame:
     """
-    Extracts rolling window features from processed user data.
+    Extracts rolling window features from processed user data, including additional rolling mean, std, and diff features for selected columns.
 
     Args:
         df (pd.DataFrame): processed data with 'timestamp' column.
         freq (str): window duration (e.g. '60s', '30s').
 
     Returns:
-        pd.DataFrame: one row per window with extracted features.
+        pd.DataFrame: one row per window with extracted features and additional rolling/diff features.
     """
     # Vérifie que toutes les colonnes nécessaires sont là
     expected_cols = ["HR", "Vector Magnitude", "Steps"]
@@ -64,6 +64,32 @@ def window_features(df: pd.DataFrame, user_id: str, freq: str = "60s") -> pd.Dat
     features.columns = ["_".join(col).lower() for col in features.columns]
     features = features.reset_index()
     features["user_id"] = user_id
+
+    # Additional engineered features with corrected column names
+    rolling_cols = {
+        "hr_mean": "hr_mean_roll3",
+        "vector magnitude_mean": "vector_magnitude_mean_roll3",
+        "steps_sum": "steps_sum_roll3"
+    }
+
+    for col, new_col in rolling_cols.items():
+        if col in features.columns:
+            features[new_col] = features[col].rolling(window=3, min_periods=1).mean()
+        else:
+            print(f"⚠️ Column not found for rolling calculation: {col}")
+
+    diff_cols = {
+        "hr_mean": "hr_mean_diff",
+        "vector magnitude_mean": "vector_magnitude_mean_diff",
+        "steps_sum": "steps_sum_diff"
+    }
+
+    for col, new_col in diff_cols.items():
+        if col in features.columns:
+            features[new_col] = features[col].diff().fillna(0)
+        else:
+            print(f"⚠️ Column not found for diff calculation: {col}")
+
     return features
 
 def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/raw", out_path: str = "data/features/all_users.csv") -> None:
@@ -81,8 +107,6 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
     
     # Add counter for debugging
     user_count = 0
-    
-    print(f"Looking for users in: {raw_dir}")
     
     for user_path in raw_dir.glob("user_*"):
         user_count += 1
@@ -116,8 +140,6 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
             print(f"⚠️ sleep.csv manquant pour {user_id}")
             feats["is_sleeping"] = False
             
-        # Verify feature data before adding
-        print(f"Features shape for {user_id}: {feats.shape}")
         all_users.append(feats)
         print(f"✅ Added features for {user_id}")
     
@@ -129,4 +151,7 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
         
     # Concat and save
     full_df = pd.concat(all_users, ignore_index=True)
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    full_df.to_csv(out_path, index=False)
+    print(f"✅ Full dataset saved to {out_path}")
     return full_df

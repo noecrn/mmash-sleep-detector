@@ -16,8 +16,8 @@ def train_and_evaluate_models(X_train, X_test, y_train, y_test):
     metrics = {
         "Accuracy": accuracy_score,
         "Precision": lambda y_true, y_pred: precision_score(y_true, y_pred, zero_division=0),
-        "Recall": recall_score,
-        "F1-score": f1_score,
+        "Recall": lambda y_true, y_pred: recall_score(y_true, y_pred, zero_division=0),
+        "F1-score": lambda y_true, y_pred: f1_score(y_true, y_pred, zero_division=0),
     }
 
     rows = []
@@ -31,3 +31,18 @@ def train_and_evaluate_models(X_train, X_test, y_train, y_test):
         rows.append(row)
 
     return pd.DataFrame(rows)
+
+
+# Evaluate trained model on all feature data
+def evaluate_model():
+    from joblib import load
+    from sklearn.metrics import classification_report
+    import pandas as pd
+
+    model = load("models/random_forest_model.joblib")
+    df = pd.read_csv("data/features/all_users.csv")
+    X = df.drop(columns=["is_sleeping", "timestamp", "user_id"])
+    y = df["is_sleeping"]
+
+    y_pred = model.predict(X)
+    print(classification_report(y, y_pred, zero_division=0))
