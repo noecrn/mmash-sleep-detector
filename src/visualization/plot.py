@@ -16,9 +16,9 @@ def plot_user_hr(user_id: str):
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df["timestamp"],
-        y=df["hr_mean"],
+        y=df["bpm"],
         mode="lines",
-        name="Heart Rate (mean)",
+        name="Heart Rate (bpm)",
         line=dict(color="royalblue")
     ))
 

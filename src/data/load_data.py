@@ -33,12 +33,27 @@ def load_sleep_data(user_dir: Path) -> pd.DataFrame:
 def load_user_data(user_dir: Path) -> pd.DataFrame:
     acti = load_actigraph_data(user_dir)
     rr = load_rr_data(user_dir)
-    
+
     df = pd.merge_asof(
         acti.sort_values("timestamp"),
         rr.sort_values("timestamp"),
         on="timestamp",
         direction="nearest"
     )
-    
+
+    # Fusion des colonnes HR si besoin
+    if "HR_y" in df.columns and "HR_x" in df.columns:
+        df["HR"] = df["HR_y"].fillna(df["HR_x"])
+    elif "HR" not in df.columns and "HR_x" in df.columns:
+        df["HR"] = df["HR_x"]
+    elif "HR" not in df.columns and "HR_y" in df.columns:
+        df["HR"] = df["HR_y"]
+
+    # Nettoyage
+    df = df.drop(columns=[
+        "HR_x", "HR_y",
+        "Unnamed: 0_x", "Unnamed: 0_y",
+        "day_x", "day_y", "time_x", "time_y"
+    ], errors="ignore")
+
     return df

@@ -43,6 +43,13 @@ def window_features(df: pd.DataFrame, user_id: str, freq: str = "60s") -> pd.Dat
     Returns:
         pd.DataFrame: one row per window with extracted features.
     """
+    # Vérifie que toutes les colonnes nécessaires sont là
+    expected_cols = ["HR", "Vector Magnitude", "Steps"]
+    missing = [col for col in expected_cols if col not in df.columns]
+    if missing:
+        print(f"⚠️ Colonnes manquantes pour {user_id} : {missing}")
+        return pd.DataFrame()
+
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.set_index("timestamp")
     df = df.sort_index()
@@ -75,6 +82,9 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
     for user_path in raw_dir.glob("user_*"):
         user_id = user_path.stem
         df = load_user_data(raw_dir / user_id)
+        print(f"{user_id} → {df.shape if df is not None else 'None'}")
+        print(f"{user_id} columns: {df.columns}" if df is not None else f"{user_id} columns: None")
+
         if df is None or df.empty:
             print(f"❌ Données manquantes ou vides pour {user_id}")
             continue
@@ -82,10 +92,11 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
         print(f"🔄 Traitement des données pour {user_id}...")
 
         feats = window_features(df, user_id=user_id)
+        print("✅ Features extracted: {feats.shape}")
 
         # Save per-user features
         processed_dir.mkdir(parents=True, exist_ok=True)
-        feats.to_csv(processed_dir / f"{user_id}.csv", index=False)
+        # feats.to_csv(processed_dir / f"{user_id}.csv", index=False)
 
         # Load sleep.csv and build sleep intervals
         sleep_path = raw_dir / user_id / "sleep.csv"
@@ -112,7 +123,8 @@ def build_dataset(processed_dir: str = "data/processed", raw_dir: str = "data/ra
 
     # Concat and save
     full_df = pd.concat(all_users, ignore_index=True)
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    full_df.to_csv(out_path, index=False)
-    print(f"✅ Dataset complet sauvegardé : {out_path}")
+    # out_path = Path(out_path)
+    # out_path.parent.mkdir(parents=True, exist_ok=True)
+    # full_df.to_csv(out_path, index=False)
+    # print(f"✅ Dataset complet sauvegardé : {out_path}")
+    return full_df

@@ -11,10 +11,12 @@ scikit-learn
 # Visualisation
 matplotlib
 seaborn
+plotly
 
 # Notebook
 jupyter
 ipykernel
+nbformat>=4.2.0
 
 # Utilitaires
 tqdm
