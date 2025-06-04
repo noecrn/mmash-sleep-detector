@@ -5,7 +5,7 @@ from sklearn.metrics import classification_report
 import joblib
 import pandas as pd
 
-def train_model(df):
+def train_model(df, eval_during_training=False):
     X = df.drop(columns=["timestamp", "is_sleeping", "user_id"])
     y = df["is_sleeping"]
 
@@ -18,8 +18,10 @@ def train_model(df):
     model = RandomForestClassifier(class_weight="balanced", random_state=42, n_jobs=-1)
     model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_test)
-    print(classification_report(y_test, y_pred, zero_division=0))
+    if eval_during_training:
+        y_pred = model.predict(X_test)
+        print("\n📊 Training evaluation metrics:")
+        print(classification_report(y_test, y_pred, zero_division=0))
 
     joblib.dump(model, "models/random_forest_model.joblib")
     print("✅ Model saved to models/random_forest_model.joblib")

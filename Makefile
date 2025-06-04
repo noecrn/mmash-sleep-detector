@@ -2,7 +2,7 @@
 
 prepare:
 	@echo "🔧 Preprocessing data and generating features..."
-	python -c 'from src.data.preprocess import build_dataset; build_dataset()'
+	python main.py prepare
 
 train:
 	@echo "🏋️ Training model on all users..."

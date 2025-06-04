@@ -1,15 +1,20 @@
 import sys
 import pandas as pd
 from src.models.train import train_model
+from src.data.preprocess import build_dataset
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python main.py [train|eval]")
+        print("Usage: python main.py [prepare|train|eval]")
         return
 
     command = sys.argv[1]
 
-    if command == "train":
+    if command == "prepare":
+        print("🔧 Preprocessing data and generating features...")
+        build_dataset()
+
+    elif command == "train":
         print("🔨 Building dataset...")
         import os
 
@@ -22,7 +27,7 @@ def main():
         df.dropna(inplace=True)
 
         print("🏋️ Training model...")
-        train_model(df)
+        train_model(df, eval_during_training=False)
 
     elif command == "eval":
         import os
@@ -42,7 +47,6 @@ def main():
         df = pd.read_csv(csv_path, parse_dates=["timestamp"])
         df.dropna(inplace=True)
 
-        print("📈 Evaluating model...")
         evaluate_model()
     else:
         print(f"Unknown command: {command}")

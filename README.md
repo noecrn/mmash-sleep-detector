@@ -50,6 +50,8 @@ make eval        # Evaluate model
 
 ![Sleep Detection Accuracy](reports/model_comparison.png)
 
+For a detailed description of the pipeline and evaluation results see the [full report](reports/REPORT.md).
+
 ## 📎 Notes
 
 * Raw data excluded from git (`data/raw/`).
